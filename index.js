@@ -9,7 +9,7 @@ main().catch(err => console.log(err));
 
 async function main() {
     await mongoose.connect(
-        'mongodb+srv://pmboobesh:a5pIqiYiNwRwnGUB@cluster0.hbtw8lt.mongodb.net/');
+        'mongodb+srv://pmboobesh:a5pIqiYiNwRwnGUB@cluster0.hbtw8lt.mongodb.net/Ecommerce');
 };
 
 
