@@ -5,7 +5,11 @@ const categorySchema = new mongoose.Schema({
     image: [{
         type: String
     }],
-    description: String
+    description: String,
+    productsId:[{
+        type: mongoose.Types.ObjectId,
+        ref: "product",
+    }]
 })
 
 const CategoryModel = mongoose.model("category", categorySchema);
