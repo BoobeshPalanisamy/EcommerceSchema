@@ -1,43 +1,62 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-var cors = require('cors');
+const mongoose = require("mongoose");
+var cors = require("cors");
+require("dotenv").config();
+
 const port = 3000;
-const mongoose = require('mongoose');
-const CategoryModel = require('./Models/category');
+const CategoryModel = require("./Models/category");
 
-
-main().catch(err => console.log(err));
+main().catch((err) => console.log(err));
 
 async function main() {
-    await mongoose.connect(
-        'mongodb+srv://pmboobesh:a5pIqiYiNwRwnGUB@cluster0.hbtw8lt.mongodb.net/Ecommerce');
-};
+    await mongoose.connect(process.env.MONGODB_CONNECTION);
+}
 
+mongoose.connection.on("connected", () => {
+    console.log("Db Connected");
+});
 
-app.use(cors({
-    credentials: "true",
-    origin: "http://localhost:5173"
-}));
+app.use(
+    cors({
+        credentials: "true",
+        origin: "http://localhost:5173",
+    })
+);
 
-app.post("/category", async (req, res) => {
+app.use(express.json());
+
+app.post("/createCategory", async (req, res) => {
     try {
         var categoryDoc = await CategoryModel.create({
-            ...req.body
+            ...req.body,
         });
         res.json(categoryDoc);
     } catch (error) {
-        res.json(error.message)
+        res.json(error.message);
     }
-})
+});
 
-app.use((express.json()))
+app.post("/createProduct/:CategoryId", async (req, res) => {
+    const CategoryId = req.params.CategoryId;
+    try {
+        var productDoc = await ProductModel.create({ ...req.body });
 
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
+        if (productDoc != null) {
+            await CategoryModel.findByIdAndUpdate(CategoryId, {
+                $push: { productsId: productDoc._id },
+            });
+            res.json(productDoc);
+        }
+    } catch (error) {
+        res.json(error.message);
+    }
+});
+
+app.get("/", (req, res) => {
+    res.send("Hello World!");
+});
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
-
-
