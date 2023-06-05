@@ -32,6 +32,7 @@ app.post("/createCategory", async (req, res) => {
         var categoryDoc = await CategoryModel.create({
             ...req.body,
         });
+        var test = "sathya";
         res.json(categoryDoc);
     } catch (error) {
         res.json(error.message);
