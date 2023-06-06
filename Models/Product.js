@@ -24,7 +24,9 @@ const productSchema = new mongoose.Schema({
         type: String,
         default: 'female'
     },
-    category: [{ type: mongoose.Schema.Types.ObjectId, ref: CategoryModel }]
+    posterURL: String,
+    category: { type: mongoose.Schema.Types.ObjectId, ref: CategoryModel },
+
 });
 
 const ProductModel = mongoose.model("Product", productSchema);

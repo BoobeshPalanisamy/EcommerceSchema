@@ -26,6 +26,8 @@ app.use(
 
 app.use(express.json());
 
+
+// This API is for Category
 app.post("/createCategory", async (req, res) => {
     try {
         var test = "kumutha dfgdsg"
@@ -39,7 +41,7 @@ app.post("/createCategory", async (req, res) => {
     }
 });
 
-
+// This API is for Product for each category
 app.post("/createProduct", async (req, res) => {
     try {
         var productDoc = await ProductModel.create({
@@ -50,6 +52,39 @@ app.post("/createProduct", async (req, res) => {
         res.json(error.message)
     }
 });
+
+// Get all category
+app.get("/fetchCategory", async (req, res) => {
+    var course = await CategoryModel.find();
+    res.json(course);
+});
+
+// Get products by category ID
+app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
+    try {
+        const categoryId = req.params.categoryId;
+        const products = await ProductModel.find({ category: categoryId }).limit(10);
+        res.json(products);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch products" });
+    }
+});
+
+// Get product by ID
+app.get("/fetchProductByID/:productId", async (req, res) => {
+    try {
+        const productId = req.params.productId;
+        const product = await ProductModel.findById(productId);
+        if (!product) {
+            return res.status(404).json({ error: "Product not found" });
+        }
+        res.json(product);
+    } catch (error) {
+        res.status(500).json({ error: "Failed to fetch product" });
+    }
+});
+
+
 
 
 app.listen(port, () => {
