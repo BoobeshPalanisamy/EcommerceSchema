@@ -26,7 +26,6 @@ app.use(
 
 app.use(express.json());
 
-
 // This API is for Category
 app.post("/createCategory", async (req, res) => {
   try {
@@ -53,7 +52,7 @@ app.post("/createProduct", async (req, res) => {
 
 app.get("/getAllProductsByCategory", async (req, res) => {
   try {
-    const getAllproductsDoc = await CategoryModel.aggregate([
+    const productsByCategory = await CategoryModel.aggregate([
       {
         $lookup: {
           from: "products",
@@ -63,25 +62,32 @@ app.get("/getAllProductsByCategory", async (req, res) => {
         },
       },
       {
-        $project: {
-          Allproducts: {
+        $addFields: {
+          products: {
             $map: {
-              input: "$Allproducts",
+              input: { $slice: ["$Allproducts", 10] },
               as: "product",
               in: {
                 title: "$$product.title",
-                posterUrl: "$$product.image",
+                // image: { $arrayElemAt: ["$$product.image", 0] },
                 price: "$$product.price",
-                color: "$$product.color",
+                discount: "$$product.discount",
+                posterUrl: "$$product.posterURL",
                 materialType: "$$product.materialType",
               },
             },
           },
         },
-    }
+      },
+      {
+        $project: {
+          name: 1,
+          products: 1,
+        },
+      },
     ]);
 
-    res.json(getAllproductsDoc);
+    res.json(productsByCategory);
   } catch (error) {
     console.log(error.message);
   }
@@ -89,33 +95,34 @@ app.get("/getAllProductsByCategory", async (req, res) => {
 
 // Get all category
 app.get("/fetchCategory", async (req, res) => {
-    var course = await CategoryModel.find();
-    res.json(course);
+  var course = await CategoryModel.find();
+  res.json(course);
 });
 
 // Get products by category ID
 app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
-    try {
-        const categoryId = req.params.categoryId;
-        const products = await ProductModel.find({ category: categoryId }).limit(10);
-        res.json(products);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch products" });
-    }
+  try {
+    const categoryId = req.params.categoryId;
+    const products = await ProductModel.find({ category: categoryId });
+
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
 });
 
 // Get product by ID
 app.get("/fetchProductByID/:productId", async (req, res) => {
-    try {
-        const productId = req.params.productId;
-        const product = await ProductModel.findById(productId);
-        if (!product) {
-            return res.status(404).json({ error: "Product not found" });
-        }
-        res.json(product);
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch product" });
+  try {
+    const productId = req.params.productId;
+    const product = await ProductModel.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
     }
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch product" });
+  }
 });
 
 app.listen(port, () => {
