@@ -28,10 +28,11 @@ app.use(express.json());
 
 app.post("/createCategory", async (req, res) => {
     try {
-        var test = "praveen"
+        var test = "kumutha dfgdsg"
         var categoryDoc = await CategoryModel.create({
             ...req.body,
         });
+        var test = "sathya";
         res.json(categoryDoc);
     } catch (error) {
         res.json(error.message);
