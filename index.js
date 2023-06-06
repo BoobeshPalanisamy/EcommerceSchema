@@ -3,9 +3,9 @@ const app = express();
 const mongoose = require("mongoose");
 var cors = require("cors");
 require("dotenv").config();
-
 const port = 3000;
 const CategoryModel = require("./Models/category");
+const ProductModel = require("./Models/Product");
 
 main().catch((err) => console.log(err));
 
@@ -38,25 +38,18 @@ app.post("/createCategory", async (req, res) => {
     }
 });
 
-app.post("/createProduct/:CategoryId", async (req, res) => {
-    const CategoryId = req.params.CategoryId;
-    try {
-        var productDoc = await ProductModel.create({ ...req.body });
 
-        if (productDoc != null) {
-            await CategoryModel.findByIdAndUpdate(CategoryId, {
-                $push: { productsId: productDoc._id },
-            });
-            res.json(productDoc);
-        }
+app.post("/createProduct", async (req, res) => {
+    try {
+        var productDoc = await ProductModel.create({
+            ...req.body
+        });
+        res.json(productDoc);
     } catch (error) {
-        res.json(error.message);
+        res.json(error.message)
     }
 });
 
-app.get("/", (req, res) => {
-    res.send("Hello World!");
-});
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
