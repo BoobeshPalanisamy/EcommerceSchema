@@ -1,4 +1,5 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const CategoryModel = require("./category");
 
 const productSchema = new mongoose.Schema({
     title: String,
@@ -13,19 +14,19 @@ const productSchema = new mongoose.Schema({
         type: String
     }],
     count: Number,
-    createddate: { type: Date, default: Date.now },
+    // createdDate: { type: Date, default: Date.now },
     discount: Number,
-    description: Number,
-    productcode: String,
-    netweight: Number,
-    materialtype: String,
+    description: String,
+    productCode: String,
+    netWeight: Number,
+    materialType: String,
     gender: {
         type: String,
         default: 'female'
-    }
+    },
+    category: [{ type: mongoose.Schema.Types.ObjectId, ref: CategoryModel }]
+});
 
-})
-
-const ProductModel = mongoose.model("product", productSchema);
+const ProductModel = mongoose.model("Product", productSchema);
 
 module.exports = ProductModel;
