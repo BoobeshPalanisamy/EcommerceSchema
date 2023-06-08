@@ -99,6 +99,50 @@ app.get("/getAllProductsByCategory", async (req, res) => {
   }
 });
 
+app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
+  try {
+    const categoaryId = req.params.categoryId;
+    const id = new mongoose.Types.ObjectId(categoaryId);
+    const products = await ProductModel.aggregate([
+      {
+        $match: {
+          _id: id,
+        },
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "category",
+          as: "Allproducts",
+        },
+      },
+      {
+        $project: {
+          Allproducts: {
+            $map: {
+              input: "$Allproducts",
+              as: "product",
+              in: {
+                title: "$$product.title",
+                posterUrl: "$$product.image",
+                price: "$$product.price",
+                color: "$$product.color",
+                materialType: "$$product.materialType",
+              },
+            },
+          },
+        },
+      },
+    ]);
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+
+
 // Get all category
 app.get("/fetchCategory", async (req, res) => {
   var course = await CategoryModel.find();
