@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const uniqueValidator = require('mongoose-unique-validator');
 
 const signupSchema = new mongoose.Schema({
     name: {
@@ -16,8 +15,6 @@ const signupSchema = new mongoose.Schema({
         required: true
     }
 });
-
-signupSchema.plugin(uniqueValidator);
 
 const SignupModel = mongoose.model('Signup', signupSchema);
 
