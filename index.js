@@ -6,10 +6,10 @@ require("dotenv").config();
 const port = process.env.PORT || 3000;
 const ProductModel = require("./Models/Product");
 const SignupModel = require('./Models/Validator');
+const CategoryModel = require("./Models/category");
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookieParser = require("cookie-parser");
-const CategoryModel = require("./Models/category");
 
 
 main().catch((err) => console.log(err));
