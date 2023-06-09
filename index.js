@@ -4,12 +4,12 @@ const mongoose = require("mongoose");
 var cors = require("cors");
 require("dotenv").config();
 const port = process.env.PORT || 3000;
-const CategoryModel = require("./Models/category");
 const ProductModel = require("./Models/Product");
 const SignupModel = require('./Models/Validator');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cookieParser = require("cookie-parser");
+const CategoryModel = require("./Models/category");
 
 
 main().catch((err) => console.log(err));
