@@ -22,11 +22,15 @@ mongoose.connection.on("connected", () => {
   console.log("Db Connected");
 });
 
+// app.use(
+//   cors({
+//     credentials: "true",
+//     origin: "http://localhost:5173",
+//   })
+// );
+
 app.use(
-  cors({
-    credentials: "true",
-    origin: "http://localhost:5173",
-  })
+  cors()
 );
 
 app.use(express.json());
