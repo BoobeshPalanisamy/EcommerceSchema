@@ -75,12 +75,12 @@ app.get("/getAllProductsByCategory", async (req, res) => {
               input: { $slice: ["$Allproducts", 10] },
               as: "product",
               in: {
-                _id : "$$product._id",
+                _id: "$$product._id",
                 title: "$$product.title",
                 // image: { $arrayElemAt: ["$$product.image", 0] },
                 posterUrl: "$$product.posterURL",
                 price: "$$product.price",
-                code : "$$product.productCode",
+                code: "$$product.productCode",
                 discount: "$$product.discount",
               },
             },
@@ -106,7 +106,7 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
     const categoryId = req.params.categoryId;
 
     const _categoryId = new mongoose.Types.ObjectId(categoryId);
-    const products = await CategoryModel.aggregate([
+    const categoriesWithProducts = await CategoryModel.aggregate([
       {
         $match: {
           _id: _categoryId,
@@ -127,10 +127,11 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
               input: "$Allproducts",
               as: "product",
               in: {
+                _id : "$$product._id",
                 title: "$$product.title",
                 posterUrl: "$$product.posterURL",
                 price: "$$product.price",
-                code : "$$product.productCode",
+                code: "$$product.productCode",
                 discount: "$$product.discount",
               },
             },
@@ -150,7 +151,9 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
     //   { category: _categoryId },
     //   { title: 1, posterURL: 1, price: 1, productCode: 1 }
     // ).populate("category", "name image");
-    res.json(products);
+    const categoryWithProducts =
+      categoriesWithProducts.length > 0 ? categoriesWithProducts[0] : [];
+    res.json(categoryWithProducts);
   } catch (error) {
     res.status(500).json(error.message);
   }
