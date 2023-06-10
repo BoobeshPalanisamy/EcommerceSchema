@@ -78,6 +78,7 @@ app.get("/getAllProductsByCategory", async (req, res) => {
               input: { $slice: ["$Allproducts", 10] },
               as: "product",
               in: {
+                _id : "$$product._id",
                 title: "$$product.title",
                 // image: { $arrayElemAt: ["$$product.image", 0] },
                 price: "$$product.price",
