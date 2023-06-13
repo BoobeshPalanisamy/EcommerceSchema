@@ -33,6 +33,24 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
+// Signup & Login using JWT(Json Web Token) authorization
+
+const authorization = (req, res, next) => {
+  const token = req.cookies.access_token;
+  console.log(token);
+  if (!token) {
+    return res.sendStatus(403);
+  }
+  try {
+    const data = jwt.verify(token, "mystery");
+    req.id = data.userId;
+    req.email = data.email;
+    return next();
+  } catch {
+    return res.sendStatus(403);
+  }
+};
+
 // This API is for Category
 app.post("/createCategory", async (req, res) => {
   try {
@@ -159,6 +177,8 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
   }
 });
 
+// Get all category
+// app.get("/fetchCategory", authorization, async (req, res) => {
 //post local storage value
 
 app.post("/getMyBag", async (req, res) => {
@@ -224,23 +244,70 @@ app.get("/fetchProductByID/:productId", async (req, res) => {
   }
 });
 
-// Signup & Login using JWT(Json Web Token) authorization
-
-const authorization = (req, res, next) => {
-  const token = req.cookies.access_token;
-  console.log(token);
-  if (!token) {
-    return res.sendStatus(403);
-  }
+// RegisterAddress
+app.post("/registeraddress", async (req, res) => {
   try {
-    const data = jwt.verify(token, "mystery");
-    req.id = data.userId;
-    req.email = data.email;
-    return next();
-  } catch {
-    return res.sendStatus(403);
+    // const {
+    //   Name,
+    //   PhoneNumber,
+    //   AlternatePhone,
+    //   Locality,
+    //   Address,
+    //   City,
+    //   Pincode,
+    //   State,
+    //   Landmark,
+    //   AddressType,
+    // } = req.body;
+
+    const newSignup = new SignupModel({
+      // Name,
+      // PhoneNumber,
+      // AlternatePhone,
+      // Locality,
+      // Address,
+      // City,
+      // Pincode,
+      // State,
+      // Landmark,
+      // AddressType,
+      ...req.body,
+    });
+
+    await newSignup.save();
+
+    res.status(201).json({ message: "Registration successful" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "An error occurred during registration" });
   }
-};
+});
+
+// Get user by ID for address
+app.get("/user/:id", async (req, res) => {
+  const userId = req.params.id;
+
+  try {
+    const user = await SignupModel.findById(userId);
+    if (user) {
+      res.json({
+        status: "SUCCESS",
+        data: user,
+      });
+    } else {
+      res.json({
+        status: "FAILED",
+        message: "User not found",
+      });
+    }
+  } catch (err) {
+    console.error(err);
+    res.json({
+      status: "FAILED",
+      message: "An error occurred while fetching the user",
+    });
+  }
+});
 
 // SignUp
 
