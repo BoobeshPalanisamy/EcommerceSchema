@@ -127,7 +127,7 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
               input: "$Allproducts",
               as: "product",
               in: {
-                _id : "$$product._id",
+                _id: "$$product._id",
                 title: "$$product.title",
                 posterUrl: "$$product.posterURL",
                 price: "$$product.price",
@@ -156,6 +156,38 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
     res.json(categoryWithProducts);
   } catch (error) {
     res.status(500).json(error.message);
+  }
+});
+
+//post local storage value
+
+app.post("/getMyBag", async (req, res) => {
+  const products = req.body;
+  const result = [];
+  try {
+    for (const product of products) {
+      const { productId, quantity } = product;
+      const foundProduct = await ProductModel.findOne(
+        { _id: productId },
+        { posterURL: 1, title: 1, price: 1, productCode: 1 }
+      );
+
+      if (foundProduct) {
+        const productDetail = {
+          posterURL: foundProduct.posterURL,
+          title: foundProduct.title,
+          price: foundProduct.price,
+          productCode: foundProduct.productCode,
+          quantity,
+        };
+        result.push(productDetail);
+      }
+    }
+
+    res.json(result);
+  } catch (error) {
+    res.json(error);
+    console.log(error);
   }
 });
 
