@@ -8,7 +8,8 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.2.2",
     "mongoose-unique-validator": "^4.0.0",
-    "nodemon": "^2.0.22"
+    "nodemon": "^2.0.22",
+    "razorpay": "^2.8.6"
   },
   "scripts": {
     "serve": "nodemon index.js"
