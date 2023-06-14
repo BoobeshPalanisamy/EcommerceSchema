@@ -8,10 +8,10 @@ const productSchema = new mongoose.Schema({
       type: String,
     },
   ],
-  size: [
+  sizes: [
     {
       size: String,
-      quantity: Number,
+      Instock: Number,
     },
   ],
   price: Number,
@@ -27,10 +27,6 @@ const productSchema = new mongoose.Schema({
   productCode: String,
   netWeight: Number,
   materialType: String,
-  gender: {
-    type: String,
-    default: "female",
-  },
   posterURL: String,
   category: { type: mongoose.Schema.Types.ObjectId, ref: CategoryModel },
 });
