@@ -244,6 +244,26 @@ app.get("/fetchProductByID/:productId", async (req, res) => {
   }
 });
 
+// Get Size and Instock by ID
+app.get("/getSizesById/:productId", async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const product = await ProductModel.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const { sizes } = product;
+    console.log(sizes);
+    const filteredSizes = sizes.filter((item) => item.Instock > 0);
+    res.json({ sizes: filteredSizes });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
+
 // RegisterAddress
 app.post("/registeraddress", async (req, res) => {
   try {
