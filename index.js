@@ -186,7 +186,7 @@ app.post("/getMyBag", async (req, res) => {
   const result = [];
   try {
     for (const product of products) {
-      const { productId, quantity } = product;
+      const { productId, sizes } = product;
       const foundProduct = await ProductModel.findOne(
         { _id: productId },
         { posterURL: 1, title: 1, price: 1, productCode: 1 }
@@ -198,7 +198,6 @@ app.post("/getMyBag", async (req, res) => {
           title: foundProduct.title,
           price: foundProduct.price,
           productCode: foundProduct.productCode,
-          quantity,
         };
         result.push(productDetail);
       }
