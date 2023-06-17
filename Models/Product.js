@@ -12,6 +12,7 @@ const productSchema = new mongoose.Schema({
     {
       size: String,
       Instock: Number,
+      Price:Number,
     },
   ],
   price: Number,

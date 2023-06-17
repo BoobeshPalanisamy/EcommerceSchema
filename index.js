@@ -403,11 +403,11 @@ app.post("/signup", async (req, res) => {
 // Signin
 
 app.post("/login", async (req, res) => {
-  let { email, password } = req.body;
-  email = email.trim();
-  password = password.trim();
+  let { PhoneNumber, password } = req.body;
+  PhoneNumber = PhoneNumber;
+  password = password;
 
-  if (email === "" || password === "") {
+  if (PhoneNumber === "" || password === "") {
     res.json({
       status: "FAILED",
       message: "Empty credentials supplied",
@@ -434,7 +434,7 @@ app.post("/login", async (req, res) => {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user._id, email: user.email },
+        { userId: user._id, PhoneNumber: user.PhoneNumber },
         "mystery"
       );
       res.cookie("access_token", token, {
@@ -457,9 +457,119 @@ app.post("/login", async (req, res) => {
   }
 });
 
+
 app.get("/protected", authorization, (req, res) => {
   return res.json({ user: { id: req.id, email: req.email } });
 });
+
+// checkout validation
+
+// app.post("/checkValidation", async (req, res) => {
+//   const products = req.body;
+//   const result = [];
+//   const errors = [];
+
+//   try {
+//     for (const product of products) {
+//       const { productId, quantity, size } = product;
+//       const foundProduct = await ProductModel.findOne(
+//         { _id: productId },
+//         { posterURL: 1, title: 1, price: 1, productCode: 1, quantity: 1 ,size:1}
+//       );
+
+//       // if (!foundProduct) {
+//       //   errors.push({
+//       //     productId,
+//       //     size,
+//       //     error: `Product with ID ${productId} not found.`,
+//       //   });
+//       //   continue;
+//       // }
+
+      
+
+//       // if (!size) {
+//       //   errors.push({
+//       //     productId,
+//       //     error: `Invalid size for product: ${foundProduct.title}.`
+//       //   });
+//       //   continue; // Skip the rest of the loop for this product
+//       // }
+
+//       // if (quantity > foundProduct.quantity) {
+//       //   errors.push({
+//       //     productId,
+//       //     error: `Quantity exceeds available stock for product: ${foundProduct.title}.`
+//       //   });
+//       //   continue; // Skip the rest of the loop for this product
+//       // }
+
+      
+//       if (foundProduct) {
+//       const productDetail = {
+//         posterURL: foundProduct.posterURL,
+//         title: foundProduct.title,
+//         price: foundProduct.price,
+//         productCode: foundProduct.productCode,
+//         quantity,
+//         size,
+//       };
+//       result.push(productDetail);
+//     }
+
+//     if (errors.length > 0) {
+//       return res.status(400).json({ errors });
+//     }
+
+//     res.json(result);
+//   } catch (error) {
+    
+//     console.log(error);
+//   }
+// });
+
+
+
+
+app.post("/checkValidation", async (req, res) => {
+  const products = req.body;
+  const result = [];
+  const errors = [];
+
+  try {
+    for (const product of products) {
+      const { productId, quantity, size } = product;
+      const foundProduct = await ProductModel.findOne(
+        { _id: productId },
+        { posterURL: 1, title: 1, price: 1, productCode: 1 }
+      );
+
+      if (foundProduct) {
+        const productDetail = {
+          posterURL: foundProduct.posterURL,
+          title: foundProduct.title,
+          price: foundProduct.price,
+          productCode: foundProduct.productCode,
+          quantity,
+          size
+        };
+
+        result.push(productDetail);
+      } else {
+        errors.push({
+          productId,
+          error: `Product with ID ${productId} not found.`
+        });
+      }
+    }
+
+    res.json({ result, errors });
+  } catch (error) {
+    res.json(error);
+    console.log(error);
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
