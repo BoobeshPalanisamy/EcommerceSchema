@@ -404,11 +404,11 @@ app.post("/signup", async (req, res) => {
 // Signin
 
 app.post("/login", async (req, res) => {
-  let { email, password } = req.body;
-  email = email.trim();
-  password = password.trim();
+  let { PhoneNumber, password } = req.body;
+  PhoneNumber = PhoneNumber;
+  password = password;
 
-  if (email === "" || password === "") {
+  if (PhoneNumber === "" || password === "") {
     res.json({
       status: "FAILED",
       message: "Empty credentials supplied",
@@ -435,7 +435,7 @@ app.post("/login", async (req, res) => {
 
       // Generate JWT token
       const token = jwt.sign(
-        { userId: user._id, email: user.email },
+        { userId: user._id, PhoneNumber: user.PhoneNumber },
         "mystery"
       );
       res.cookie("access_token", token, {
@@ -457,6 +457,7 @@ app.post("/login", async (req, res) => {
     }
   }
 });
+
 
 app.get("/protected", authorization, (req, res) => {
   return res.json({ user: { id: req.id, email: req.email } });
