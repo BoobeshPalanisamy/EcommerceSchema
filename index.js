@@ -189,18 +189,23 @@ app.post("/getMyBag", async (req, res) => {
       const { productId, sizes } = product;
       const foundProduct = await ProductModel.findOne(
         { _id: productId },
-        { posterURL: 1, title: 1, price: 1, productCode: 1 }
+        { posterURL: 1, title: 1, price: 1, productCode: 1, sizes: 1 }
       );
 
       if (foundProduct) {
         const productDetail = {
+          _id:foundProduct._id,
           posterURL: foundProduct.posterURL,
           title: foundProduct.title,
           price: foundProduct.price,
           productCode: foundProduct.productCode,
+          // sizes: [],
+          
         };
+
         result.push(productDetail);
       }
+      
     }
 
     res.json(result);
@@ -457,119 +462,58 @@ app.post("/login", async (req, res) => {
   }
 });
 
-
 app.get("/protected", authorization, (req, res) => {
   return res.json({ user: { id: req.id, email: req.email } });
 });
 
-// checkout validation
-
-// app.post("/checkValidation", async (req, res) => {
-//   const products = req.body;
-//   const result = [];
-//   const errors = [];
-
-//   try {
-//     for (const product of products) {
-//       const { productId, quantity, size } = product;
-//       const foundProduct = await ProductModel.findOne(
-//         { _id: productId },
-//         { posterURL: 1, title: 1, price: 1, productCode: 1, quantity: 1 ,size:1}
-//       );
-
-//       // if (!foundProduct) {
-//       //   errors.push({
-//       //     productId,
-//       //     size,
-//       //     error: `Product with ID ${productId} not found.`,
-//       //   });
-//       //   continue;
-//       // }
-
-      
-
-//       // if (!size) {
-//       //   errors.push({
-//       //     productId,
-//       //     error: `Invalid size for product: ${foundProduct.title}.`
-//       //   });
-//       //   continue; // Skip the rest of the loop for this product
-//       // }
-
-//       // if (quantity > foundProduct.quantity) {
-//       //   errors.push({
-//       //     productId,
-//       //     error: `Quantity exceeds available stock for product: ${foundProduct.title}.`
-//       //   });
-//       //   continue; // Skip the rest of the loop for this product
-//       // }
-
-      
-//       if (foundProduct) {
-//       const productDetail = {
-//         posterURL: foundProduct.posterURL,
-//         title: foundProduct.title,
-//         price: foundProduct.price,
-//         productCode: foundProduct.productCode,
-//         quantity,
-//         size,
-//       };
-//       result.push(productDetail);
-//     }
-
-//     if (errors.length > 0) {
-//       return res.status(400).json({ errors });
-//     }
-
-//     res.json(result);
-//   } catch (error) {
-    
-//     console.log(error);
-//   }
-// });
-
-
-
+//check validation
 
 app.post("/checkValidation", async (req, res) => {
   const products = req.body;
-  const result = [];
   const errors = [];
 
   try {
     for (const product of products) {
-      const { productId, quantity, size } = product;
-      const foundProduct = await ProductModel.findOne(
-        { _id: productId },
-        { posterURL: 1, title: 1, price: 1, productCode: 1 }
-      );
+      const { productId, sizes } = product;
+      const foundProduct = await ProductModel.findOne({ _id: productId });
+
+      var error = "";
 
       if (foundProduct) {
-        const productDetail = {
-          posterURL: foundProduct.posterURL,
-          title: foundProduct.title,
-          price: foundProduct.price,
-          productCode: foundProduct.productCode,
-          quantity,
-          size
-        };
+        for (const sizeObj of sizes) {
+          var dbSize = foundProduct.sizes.find(
+            (size) => size.size == sizeObj.size
+          );
 
-        result.push(productDetail);
-      } else {
-        errors.push({
-          productId,
-          error: `Product with ID ${productId} not found.`
-        });
+          if (dbSize.Instock == 0) {
+            error =
+              "Currently no stock for this product, remove this to proceed";
+          }
+
+          if (dbSize.Instock < sizeObj.Instock) {
+            error = `Quantity you have selected is should be equal or less than the Instock count - ${dbSize.Instock}`;
+          }
+
+          if (dbSize.Instock != 0 && dbSize.Instock >= sizeObj.Instock) {
+            continue;
+          }
+
+          var errorObject = {
+            productId,
+            sizeObj,
+            error,
+          };
+
+          errors.push(errorObject);
+        }
       }
     }
-
-    res.json({ result, errors });
+    res.json(errors);
   } catch (error) {
     res.json(error);
     console.log(error);
   }
 });
-
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
