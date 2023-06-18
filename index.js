@@ -199,8 +199,6 @@ app.post("/getMyBag", async (req, res) => {
           title: foundProduct.title,
           price: foundProduct.price,
           productCode: foundProduct.productCode,
-          // sizes: [],
-          
         };
 
         result.push(productDetail);
