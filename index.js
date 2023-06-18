@@ -185,28 +185,31 @@ app.post("/getMyBag", async (req, res) => {
   const products = req.body;
   const result = [];
   try {
-    for (const product of products) {
-      const { productId, sizes } = product;
-      const foundProduct = await ProductModel.findOne(
-        { _id: productId },
-        { posterURL: 1, title: 1, price: 1, productCode: 1, sizes: 1 }
-      );
-
-      if (foundProduct) {
-        const productDetail = {
-          _id:foundProduct._id,
-          posterURL: foundProduct.posterURL,
-          title: foundProduct.title,
-          price: foundProduct.price,
-          productCode: foundProduct.productCode,
-        };
-
-        result.push(productDetail);
+    if(products && products.length > 0){
+      for (const product of products) {
+        const { productId, sizes } = product;
+        const foundProduct = await ProductModel.findOne(
+          { _id: productId },
+          { posterURL: 1, title: 1, price: 1, productCode: 1, sizes: 1 }
+        );
+  
+        if (foundProduct) {
+          const productDetail = {
+            _id:foundProduct._id,
+            posterURL: foundProduct.posterURL,
+            title: foundProduct.title,
+            price: foundProduct.price,
+            productCode: foundProduct.productCode,
+          };
+  
+          result.push(productDetail);
+        } 
       }
-      
+      res.json(result);
     }
-
-    res.json(result);
+    else{
+      res.json([]);
+    }
   } catch (error) {
     res.json(error);
     console.log(error);
