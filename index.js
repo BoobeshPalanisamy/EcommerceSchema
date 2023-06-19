@@ -10,6 +10,7 @@ const CategoryModel = require("./Models/CategoryTest");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const ProductOrderModel = require("./Models/Productorder");
 
 main().catch((err) => console.log(err));
 
@@ -570,6 +571,19 @@ app.post("/checkValidation", async (req, res) => {
     console.log(error);
   }
 });
+
+// This API is for create Product Order Table
+
+app.post("/productorder", async (req, res) => {
+  try {
+    var productorderDoc = await ProductOrderModel.create({
+      ...req.body,
+    });
+    res.json(productorderDoc);
+  } catch (error) {
+    res.json(error.message)
+  }
+})
 
 
 app.listen(port, () => {
