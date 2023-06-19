@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const CategoryModel = require("./CategoryTest");
 
 const productorderSchema = new mongoose.Schema({
   userId: {
