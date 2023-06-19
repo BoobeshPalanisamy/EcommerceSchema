@@ -185,29 +185,48 @@ app.post("/getMyBag", async (req, res) => {
   const products = req.body;
   const result = [];
   try {
-    if(products && products.length > 0){
+    if (products && products.length > 0) {
       for (const product of products) {
         const { productId, sizes } = product;
+
         const foundProduct = await ProductModel.findOne(
           { _id: productId },
           { posterURL: 1, title: 1, price: 1, productCode: 1, sizes: 1 }
         );
-  
+
         if (foundProduct) {
           const productDetail = {
-            _id:foundProduct._id,
+            _id: foundProduct._id,
             posterURL: foundProduct.posterURL,
             title: foundProduct.title,
             price: foundProduct.price,
             productCode: foundProduct.productCode,
+            sizes: [],
           };
-  
-          result.push(productDetail);
-        } 
+
+          for (const size of sizes) {
+            if (size.qty > 0) {
+              const foundSize = foundProduct.sizes.find(
+                (sizeObj) => sizeObj.size === size.size
+              );
+              if (foundSize) {
+                productDetail.sizes.push({
+                  size: foundSize.size,
+                  price: foundSize.Price,
+                  qty: size.qty,
+                });
+              }
+            }
+
+            
+          }
+          if (productDetail.sizes.length != 0) {
+            result.push(productDetail);
+          }
+        }
       }
       res.json(result);
-    }
-    else{
+    } else {
       res.json([]);
     }
   } catch (error) {
