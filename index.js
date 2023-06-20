@@ -218,8 +218,6 @@ app.post("/getMyBag", async (req, res) => {
                 });
               }
             }
-
-            
           }
           if (productDetail.sizes.length != 0) {
             result.push(productDetail);
@@ -545,10 +543,48 @@ app.post("/productorder", async (req, res) => {
     });
     res.json(productorderDoc);
   } catch (error) {
-    res.json(error.message)
+    res.json(error.message);
   }
-})
+});
 
+// This api is for search
+
+// app.get("/searchproduct", async (req, res) => {
+//   const searchTerm = req.query.searchTerm;
+//   let data = await ProductModel.find({
+//     $or: [
+//       { title: { $regex: searchTerm, $options: 'i' } },
+//       { productCode: { $regex: searchTerm, $options: 'i' } },
+//     ],
+//   });
+//   res.send(data);
+// });
+
+app.get("/searchproduct", async (req, res) => {
+  const searchTerm = req.query.searchTerm;
+  let data = await ProductModel.aggregate([
+    {
+      $match: {
+        $or: [
+          { title: { $regex: searchTerm, $options: "i" } },
+          { productCode: { $regex: searchTerm, $options: "i" } },
+        ],
+      },
+    },
+    {
+      $project: {
+        title: 1,
+        _id: 0,
+        "sizes.size": 1,
+        posterURL: 1,
+        productCode: 1,
+        discount: 1,
+        firstSizePrice: { $arrayElemAt: ["$sizes.Price", 0] },
+      },
+    },
+  ]);
+  res.send(data);
+});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
