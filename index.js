@@ -549,17 +549,6 @@ app.post("/productorder", async (req, res) => {
 
 // This api is for search
 
-// app.get("/searchproduct", async (req, res) => {
-//   const searchTerm = req.query.searchTerm;
-//   let data = await ProductModel.find({
-//     $or: [
-//       { title: { $regex: searchTerm, $options: 'i' } },
-//       { productCode: { $regex: searchTerm, $options: 'i' } },
-//     ],
-//   });
-//   res.send(data);
-// });
-
 app.get("/searchproduct", async (req, res) => {
   const searchTerm = req.query.searchTerm;
   let data = await ProductModel.aggregate([
@@ -575,11 +564,17 @@ app.get("/searchproduct", async (req, res) => {
       $project: {
         title: 1,
         _id: 0,
-        "sizes.size": 1,
+        sizes: {
+          $map: {
+            input: "$sizes",
+            as: "size",
+            in: "$$size.size",
+          },
+        },
         posterURL: 1,
         productCode: 1,
         discount: 1,
-        firstSizePrice: { $arrayElemAt: ["$sizes.Price", 0] },
+        price: { $arrayElemAt: ["$sizes.Price", 0] },
       },
     },
   ]);
