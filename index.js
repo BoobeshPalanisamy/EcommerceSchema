@@ -203,7 +203,7 @@ app.post("/getMyBag", async (req, res) => {
             productCode: foundProduct.productCode,
             sizes: [],
           };
-
+          sizes.sort((a, b) => b.size.localeCompare(a.size));
           for (const size of sizes) {
             if (size.qty > 0) {
               const foundSize = foundProduct.sizes.find(
