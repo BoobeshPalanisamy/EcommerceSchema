@@ -10,6 +10,7 @@ const CategoryModel = require("./Models/CategoryTest");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const ProductOrderModel = require("./Models/Productorder");
 
 main().catch((err) => console.log(err));
 
@@ -217,8 +218,6 @@ app.post("/getMyBag", async (req, res) => {
                 });
               }
             }
-
-            
           }
           if (productDetail.sizes.length != 0) {
             result.push(productDetail);
@@ -533,6 +532,53 @@ app.post("/checkValidation", async (req, res) => {
     res.json(error);
     console.log(error);
   }
+});
+
+// This API is for create Product Order Table
+
+app.post("/productorder", async (req, res) => {
+  try {
+    var productorderDoc = await ProductOrderModel.create({
+      ...req.body,
+    });
+    res.json(productorderDoc);
+  } catch (error) {
+    res.json(error.message);
+  }
+});
+
+// This api is for search
+
+app.get("/searchproduct", async (req, res) => {
+  const searchTerm = req.query.searchTerm;
+  let data = await ProductModel.aggregate([
+    {
+      $match: {
+        $or: [
+          { title: { $regex: searchTerm, $options: "i" } },
+          { productCode: { $regex: searchTerm, $options: "i" } },
+        ],
+      },
+    },
+    {
+      $project: {
+        title: 1,
+        _id: 0,
+        sizes: {
+          $map: {
+            input: "$sizes",
+            as: "size",
+            in: "$$size.size",
+          },
+        },
+        posterURL: 1,
+        productCode: 1,
+        discount: 1,
+        price: { $arrayElemAt: ["$sizes.Price", 0] },
+      },
+    },
+  ]);
+  res.send(data);
 });
 
 app.listen(port, () => {
