@@ -11,6 +11,18 @@ const productorderSchema = new mongoose.Schema({
         type: String,
         required: true,
       },
+      title: {
+        type: String,
+        required: true,
+      },
+      productCode: {
+        type: String,
+        required: true,
+      },
+      posterURL: {
+        type: String,
+        required: true,
+      },
       sizes: [
         {
           size: {
