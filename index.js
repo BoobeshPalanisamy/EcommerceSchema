@@ -278,7 +278,6 @@ app.get("/getSizesById/:productId", async (req, res) => {
     }
 
     const { sizes } = product;
-    console.log(sizes);
     const filteredSizes = sizes.filter((item) => item.Instock > 0);
     res.json({ sizes: filteredSizes });
   } catch (error) {
