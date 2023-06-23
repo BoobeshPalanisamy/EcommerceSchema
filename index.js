@@ -75,6 +75,55 @@ app.post("/createProduct", async (req, res) => {
     res.json(error.message);
   }
 });
+app.get("/getAllProducts", async (req, res) => {
+  try {
+    const productDetail = await ProductModel.aggregate([
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      {
+        $unwind: "$category"
+      },
+      {
+        $project: {
+          
+          title: 1,
+          description: 1,
+          productCode: 1,
+          posterURL:1,
+          categoryName: "$category.name",
+          sizes: {
+            $map: {
+              input: "$sizes",
+              as: "size",
+              in: {
+                size: "$$size.size",
+                price: "$$size.Price",
+                inStock: {
+                  $cond: {
+                    if: { $gt: ["$$size.Instock", 0] },
+                    then: "$$size.Instock",
+                    else: 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ]);
+
+    res.json(productDetail);
+  } catch (error) {
+    res.json(error.message);
+  }
+});
+
 
 app.get("/getAllProductsByCategory", async (req, res) => {
   try {
@@ -636,6 +685,7 @@ app.get("/searchproduct", async (req, res) => {
   ]);
   res.send(data);
 });
+
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
