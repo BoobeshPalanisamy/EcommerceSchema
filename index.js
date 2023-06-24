@@ -75,6 +75,27 @@ app.post("/createProduct", async (req, res) => {
     res.json(error.message);
   }
 });
+
+app.put("/updatecategories/:id", async (req, res) => {
+  try {
+    const categoryId = req.params.id;
+    const { name, image, description } = req.body;
+    if (categoryId) {
+      const updatedCategory = await CategoryModel.findByIdAndUpdate(
+        categoryId,
+        { name, image, description },
+        { new: true }
+      );
+      res.json(updatedCategory);
+    } else {
+      return res.status(400).json({ error: "Category ID is required." });
+    }
+    
+  } catch (error) {
+    res.json(error.message);
+  }
+});
+
 app.get("/getAllProducts", async (req, res) => {
   try {
     const productDetail = await ProductModel.aggregate([
@@ -83,15 +104,14 @@ app.get("/getAllProducts", async (req, res) => {
           from: "categories",
           localField: "category",
           foreignField: "_id",
-          as: "category"
-        }
+          as: "category",
+        },
       },
       {
-        $unwind: "$category"
+        $unwind: "$category",
       },
       {
         $project: {
-          
           title: 1,
           description: 1,
           productCode: 1,
@@ -109,14 +129,14 @@ app.get("/getAllProducts", async (req, res) => {
                   $cond: {
                     if: { $gt: ["$$size.Instock", 0] },
                     then: "$$size.Instock",
-                    else: 0
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+                    else: 0,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     ]);
 
     res.json(productDetail);
@@ -124,7 +144,6 @@ app.get("/getAllProducts", async (req, res) => {
     res.json(error.message);
   }
 });
-
 
 app.get("/getAllProductsByCategory", async (req, res) => {
   try {
@@ -686,7 +705,6 @@ app.get("/searchproduct", async (req, res) => {
   ]);
   res.send(data);
 });
-
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
