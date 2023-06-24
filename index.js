@@ -95,6 +95,7 @@ app.get("/getAllProducts", async (req, res) => {
           title: 1,
           description: 1,
           productCode: 1,
+          materialType:1,
           posterURL:1,
           categoryName: "$category.name",
           sizes: {
