@@ -11,6 +11,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ProductOrderModel = require("./Models/Productorder");
+const papa = require("papaparse");
+const fs = require("fs");
 
 main().catch((err) => console.log(err));
 
@@ -289,30 +291,7 @@ app.get("/getSizesById/:productId", async (req, res) => {
 // RegisterAddress
 app.post("/registeraddress", async (req, res) => {
   try {
-    // const {
-    //   Name,
-    //   PhoneNumber,
-    //   AlternatePhone,
-    //   Locality,
-    //   Address,
-    //   City,
-    //   Pincode,
-    //   State,
-    //   Landmark,
-    //   AddressType,
-    // } = req.body;
-
     const newSignup = new SignupModel({
-      // Name,
-      // PhoneNumber,
-      // AlternatePhone,
-      // Locality,
-      // Address,
-      // City,
-      // Pincode,
-      // State,
-      // Landmark,
-      // AddressType,
       ...req.body,
     });
 
@@ -534,12 +513,22 @@ app.post("/checkValidation", async (req, res) => {
 });
 
 // This API is for create Product Order Table
-
 app.post("/productorder", async (req, res) => {
   try {
     var productorderDoc = await ProductOrderModel.create({
       ...req.body,
     });
+
+    // Reduce the Instock quantity in the ProductModel for each ordered size
+    for (const productDetail of req.body.productdetail) {
+      for (const size of productDetail.sizes) {
+        await ProductModel.updateOne(
+          { _id: productDetail.productId, "sizes.size": size.size },
+          { $inc: { "sizes.$.Instock": -size.quantity } }
+        );
+      }
+    }
+
     res.json(productorderDoc);
   } catch (error) {
     res.json(error.message);
@@ -547,7 +536,6 @@ app.post("/productorder", async (req, res) => {
 });
 
 // Get Orderdetails
-
 app.get("/getOrderDetails", async (req, res) => {
   const searchOrder = req.query.id;
   try {
@@ -574,6 +562,7 @@ app.get("/getOrderDetails", async (req, res) => {
                     in: {
                       size: "$$size.size",
                       quantity: "$$size.quantity",
+                      price: "$$size.price",
                     },
                   },
                 },
@@ -635,6 +624,32 @@ app.get("/searchproduct", async (req, res) => {
     },
   ]);
   res.send(data);
+});
+
+// This API is for CSV upload
+
+app.get("/uploadcsv", async (req, res) => {
+  try {
+    const papa = require("papaparse");
+    const filePath = req.query.filePath;
+    const file = await fs.promises.readFile(
+      filePath,
+      //  "C:/Users/Admin/Downloads/Product_Upload.csv",
+      "utf8"
+    );
+
+    papa.parse(file, {
+      skipEmptyLines: "greedy",
+      header: false,
+      complete: (result) => {
+        // console.dir(result.data);
+        res.send(result.data);
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.listen(port, () => {
