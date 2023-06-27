@@ -178,9 +178,6 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
   }
 });
 
-// Get all category
-// app.get("/fetchCategory", authorization, async (req, res) => {
-//post local storage value
 
 // app.post("/getMyBag", async (req, res) => {
 //   const products = req.body;
@@ -374,6 +371,59 @@ app.post("/checkOut", async (req, res) => {
   } catch (error) {
     res.json(error);
     console.log(error);
+  }
+});
+
+
+// Get all category
+
+app.get("/fetchCategory", async (req, res) => {
+  var course = await CategoryModel.find();
+  res.json(course);
+});
+
+// Get products by category ID
+app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    const products = await ProductModel.find({ category: categoryId });
+
+    res.json(products);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
+// Get product by ID
+app.get("/fetchProductByID/:productId", async (req, res) => {
+  try {
+    const productId = req.params.productId;
+    const product = await ProductModel.findById(productId);
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    res.json(product);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch product" });
+  }
+});
+
+// Get Size and Instock by ID
+app.get("/getSizesById/:productId", async (req, res) => {
+  const { productId } = req.params;
+
+  try {
+    const product = await ProductModel.findById(productId);
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const { sizes } = product;
+    const filteredSizes = sizes.filter((item) => item.Instock > 0);
+    res.json({ sizes: filteredSizes });
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
