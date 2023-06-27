@@ -182,9 +182,66 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
 // app.get("/fetchCategory", authorization, async (req, res) => {
 //post local storage value
 
+// app.post("/getMyBag", async (req, res) => {
+//   const products = req.body;
+//   const result = [];
+//   try {
+//     if (products && products.length > 0) {
+//       for (const product of products) {
+//         const { productId, sizes } = product;
+
+//         const foundProduct = await ProductModel.findOne(
+//           { _id: productId },
+//           { posterURL: 1, title: 1, price: 1, productCode: 1, sizes: 1 }
+//         );
+
+//         if (foundProduct) {
+//           const productDetail = {
+//             _id: foundProduct._id,
+//             posterURL: foundProduct.posterURL,
+//             title: foundProduct.title,
+//             price: foundProduct.price,
+//             productCode: foundProduct.productCode,
+//             sizes: [],
+//           };
+//           sizes.sort((a, b) => b.size.localeCompare(a.size));
+//           for (const size of sizes) {
+//             if (size.qty > 0) {
+//               const foundSize = foundProduct.sizes.find(
+//                 (sizeObj) => sizeObj.size === size.size
+//               );
+//               if (foundSize) {
+//                 const totalCount = size.qty * foundSize.Price;
+
+//                 productDetail.sizes.push({
+//                   size: foundSize.size,
+//                   price: foundSize.Price,
+//                   qty: size.qty,
+//                   totalCount:totalCount
+//                 });
+//               }
+//             }
+//           }
+//           if (productDetail.sizes.length != 0) {
+//             result.push(productDetail);
+//           }
+//         }
+//       }
+//       res.json(result);
+//     } else {
+//       res.json([]);
+//     }
+//   } catch (error) {
+//     res.json(error);
+//     console.log(error);
+//   }
+// });
+
 app.post("/getMyBag", async (req, res) => {
   const products = req.body;
   const result = [];
+  let itemsPrice = 0; // Variable to store the total count for all products
+
   try {
     if (products && products.length > 0) {
       for (const product of products) {
@@ -203,30 +260,56 @@ app.post("/getMyBag", async (req, res) => {
             price: foundProduct.price,
             productCode: foundProduct.productCode,
             sizes: [],
+            totalCount: 0, // Initialize totalCount to 0
           };
+
           sizes.sort((a, b) => b.size.localeCompare(a.size));
+
+          let productTotalCount = 0; // Variable to store the total count for each product
+
           for (const size of sizes) {
             if (size.qty > 0) {
               const foundSize = foundProduct.sizes.find(
                 (sizeObj) => sizeObj.size === size.size
               );
               if (foundSize) {
+                const totalCount = Number(foundSize.Price) * Number(size.qty);
+
                 productDetail.sizes.push({
                   size: foundSize.size,
                   price: foundSize.Price,
                   qty: size.qty,
+                  // totalCount: totalCount,
                 });
+
+                productTotalCount += totalCount; // Increment productTotalCount with the totalCount of each size
               }
             }
           }
-          if (productDetail.sizes.length != 0) {
-            result.push(productDetail);
+
+          productDetail.totalCount = productTotalCount; // Assign the productTotalCount to productDetail.totalCount
+          itemsPrice += productTotalCount; // Increment totalProductCount with the productTotalCount
+
+          if (productDetail.sizes.length !== 0) {
+            result.push({
+              ...productDetail,
+              totalCount: undefined, // Exclude totalCount from the result
+            });
           }
         }
       }
-      res.json(result);
+
+      res.json({
+        result: result,
+        itemsPrice: itemsPrice, // Include the totalProductCount in the response
+        itemsCount: result.length, // Include the total count of products in the response
+      });
     } else {
-      res.json([]);
+      res.json({
+        result: [],
+        itemsPrice: 0, // If there are no products, set the totalProductCount to 0
+        itemsCount: 0,
+      });
     }
   } catch (error) {
     res.json(error);
@@ -234,56 +317,63 @@ app.post("/getMyBag", async (req, res) => {
   }
 });
 
-// Get all category
+//get checkOut
 
-app.get("/fetchCategory", async (req, res) => {
-  var course = await CategoryModel.find();
-  res.json(course);
-});
+app.post("/checkOut", async (req, res) => {
+  const products = req.body;
+ let itemsPrice = 0; // Variable to store the total count for all products
 
-// Get products by category ID
-app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
   try {
-    const categoryId = req.params.categoryId;
-    const products = await ProductModel.find({ category: categoryId });
+    if (products && products.length > 0) {
+      for (const product of products) {
+        const { productId, sizes } = product;
 
-    res.json(products);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch products" });
-  }
-});
+        const foundProduct = await ProductModel.findOne({ _id: productId });
 
-// Get product by ID
-app.get("/fetchProductByID/:productId", async (req, res) => {
-  try {
-    const productId = req.params.productId;
-    const product = await ProductModel.findById(productId);
-    if (!product) {
-      return res.status(404).json({ error: "Product not found" });
+        if (foundProduct) {
+          const productDetail = {
+            _id: foundProduct._id,
+            sizes: [],
+          };
+
+          let productTotalCount = 0; // Variable to store the total count for each product
+
+          for (const size of sizes) {
+            if (size.qty > 0) {
+              const foundSize = foundProduct.sizes.find(
+                (sizeObj) => sizeObj.size === size.size
+              );
+              if (foundSize) {
+                const totalCount = Number(foundSize.Price) * Number(size.qty);
+
+                productTotalCount += totalCount; // Increment productTotalCount with the totalCount of each size
+              }
+            }
+          }
+
+          productDetail.totalCount = productTotalCount; // Assign the productTotalCount to productDetail.totalCount
+          itemsPrice += productTotalCount; // Increment itemsPrice with the productTotalCount
+        }
+      }
+
+      const deliveryFee = 0; // Set the delivery fee to 0
+      const orderTotal = itemsPrice + deliveryFee; // Calculate the order total
+
+      res.json({
+        itemsPrice: itemsPrice, // Display the items price
+        deliveryFee: deliveryFee, // Display the delivery fee
+        orderTotal: orderTotal, // Display the order total
+      });
+    } else {
+      res.json({
+        itemsPrice: 0,
+        deliveryFee: 0, // Set the delivery fee to 0
+        orderTotal: 0, // If there are no products, set the order total to 0
+      });
     }
-    res.json(product);
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch product" });
-  }
-});
-
-// Get Size and Instock by ID
-app.get("/getSizesById/:productId", async (req, res) => {
-  const { productId } = req.params;
-
-  try {
-    const product = await ProductModel.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    const { sizes } = product;
-    console.log(sizes);
-    const filteredSizes = sizes.filter((item) => item.Instock > 0);
-    res.json({ sizes: filteredSizes });
-  } catch (error) {
-    console.error("Error fetching product:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.json(error);
+    console.log(error);
   }
 });
 
