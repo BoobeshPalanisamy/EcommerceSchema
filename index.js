@@ -78,6 +78,37 @@ app.post("/createProduct", async (req, res) => {
   }
 });
 
+// This API is for product Bulk Upload
+
+app.post("/bulkupload", async (req, res) => {
+  try {
+    const products = req.body;
+    // console.log(products);
+
+    // Create an array to store the created products
+    const createdProducts = [];
+
+    // Iterate over the products array and create a document for each product
+    for (const productData of products) {
+      // Find the category by name and replace it with the _id
+      const category = await CategoryModel.findOne({
+        name: productData.category,
+      });
+      if (category) {
+        productData.category = category._id;
+      }
+
+      const createdProduct = await ProductModel.create(productData);
+      createdProducts.push(createdProduct);
+    }
+
+    res.json(createdProducts);
+  } catch (error) {
+    console.error("Error creating products:", error);
+    res.status(500).json({ error: "Error creating products" });
+  }
+});
+
 app.get("/getAllProductsByCategory", async (req, res) => {
   try {
     const productsByCategory = await CategoryModel.aggregate([
@@ -561,7 +592,7 @@ app.get("/getOrderDetails", async (req, res) => {
                     as: "size",
                     in: {
                       size: "$$size.size",
-                      quantity: "$$size.quantity",
+                      qty: "$$size.quantity",
                       price: "$$size.price",
                     },
                   },
