@@ -268,12 +268,7 @@ app.post("/checkOut", async (req, res) => {
         const foundProduct = await ProductModel.findOne({ _id: productId });
 
         if (foundProduct) {
-          const productDetail = {
-            _id: foundProduct._id,
-            sizes: [],
-          };
-
-          let productTotalCount = 0; // Variable to store the total count for each product
+          let productTotalCount = 0;
 
           for (const size of sizes) {
             if (size.qty > 0) {
@@ -283,29 +278,28 @@ app.post("/checkOut", async (req, res) => {
               if (foundSize) {
                 const totalCount = Number(foundSize.Price) * Number(size.qty);
 
-                productTotalCount += totalCount; // Increment productTotalCount with the totalCount of each size
+                productTotalCount += totalCount;
               }
             }
           }
 
-          productDetail.totalCount = productTotalCount; // Assign the productTotalCount to productDetail.totalCount
-          itemsPrice += productTotalCount; // Increment itemsPrice with the productTotalCount
+          itemsPrice += productTotalCount;
         }
       }
 
-      const deliveryFee = 0; // Set the delivery fee to 0
-      const orderTotal = itemsPrice + deliveryFee; // Calculate the order total
+      const deliveryFee = 0;
+      const orderTotal = itemsPrice + deliveryFee;
 
       res.json({
-        itemsPrice: itemsPrice, // Display the items price
-        deliveryFee: deliveryFee, // Display the delivery fee
-        orderTotal: orderTotal, // Display the order total
+        itemsPrice: itemsPrice,
+        deliveryFee: deliveryFee,
+        orderTotal: orderTotal,
       });
     } else {
       res.json({
         itemsPrice: 0,
-        deliveryFee: 0, // Set the delivery fee to 0
-        orderTotal: 0, // If there are no products, set the order total to 0
+        deliveryFee: 0,
+        orderTotal: 0,
       });
     }
   } catch (error) {
