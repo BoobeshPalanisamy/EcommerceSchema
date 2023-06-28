@@ -178,6 +178,9 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
   }
 });
 
+// Get all category
+// app.get("/fetchCategory", authorization, async (req, res) => {
+//post local storage value
 
 // app.post("/getMyBag", async (req, res) => {
 //   const products = req.body;
@@ -257,7 +260,7 @@ app.post("/getMyBag", async (req, res) => {
             price: foundProduct.price,
             productCode: foundProduct.productCode,
             sizes: [],
-            totalCount: 0, // Initialize totalCount to 0
+            totalCount: 0, 
           };
 
           sizes.sort((a, b) => b.size.localeCompare(a.size));
@@ -276,7 +279,6 @@ app.post("/getMyBag", async (req, res) => {
                   size: foundSize.size,
                   price: foundSize.Price,
                   qty: size.qty,
-                  // totalCount: totalCount,
                 });
 
                 productTotalCount += totalCount; // Increment productTotalCount with the totalCount of each size
@@ -298,13 +300,13 @@ app.post("/getMyBag", async (req, res) => {
 
       res.json({
         result: result,
-        itemsPrice: itemsPrice, // Include the totalProductCount in the response
-        itemsCount: result.length, // Include the total count of products in the response
+        itemsPrice: itemsPrice,
+        itemsCount: result.length,
       });
     } else {
       res.json({
         result: [],
-        itemsPrice: 0, // If there are no products, set the totalProductCount to 0
+        itemsPrice: 0,
         itemsCount: 0,
       });
     }
@@ -318,7 +320,7 @@ app.post("/getMyBag", async (req, res) => {
 
 app.post("/checkOut", async (req, res) => {
   const products = req.body;
- let itemsPrice = 0; // Variable to store the total count for all products
+  let itemsPrice = 0; // Variable to store the total count for all products
 
   try {
     if (products && products.length > 0) {
@@ -373,7 +375,6 @@ app.post("/checkOut", async (req, res) => {
     console.log(error);
   }
 });
-
 
 // Get all category
 
