@@ -178,13 +178,11 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
   }
 });
 
-// Get all category
-// app.get("/fetchCategory", authorization, async (req, res) => {
-//post local storage value
-
 app.post("/getMyBag", async (req, res) => {
   const products = req.body;
   const result = [];
+  let itemsPrice = 0; // Variable to store the total count for all products
+
   try {
     if (products && products.length > 0) {
       for (const product of products) {
@@ -200,33 +198,109 @@ app.post("/getMyBag", async (req, res) => {
             _id: foundProduct._id,
             posterURL: foundProduct.posterURL,
             title: foundProduct.title,
-            price: foundProduct.price,
             productCode: foundProduct.productCode,
             sizes: [],
           };
+
           sizes.sort((a, b) => b.size.localeCompare(a.size));
+
+          let productTotalCount = 0; // Variable to store the total count for each product
+
           for (const size of sizes) {
             if (size.qty > 0) {
               const foundSize = foundProduct.sizes.find(
                 (sizeObj) => sizeObj.size === size.size
               );
               if (foundSize) {
+                const sizePrizeTotal =
+                  Number(foundSize.Price) * Number(size.qty);
+
                 productDetail.sizes.push({
                   size: foundSize.size,
                   price: foundSize.Price,
                   qty: size.qty,
                 });
+
+                productTotalCount += sizePrizeTotal; // Increment productTotalCount with the totalCount of each size
               }
             }
           }
-          if (productDetail.sizes.length != 0) {
-            result.push(productDetail);
+
+          itemsPrice += productTotalCount; // Increment totalProductCount with the productTotalCount
+
+          if (productDetail.sizes.length !== 0) {
+            result.push({
+              ...productDetail,
+            });
           }
         }
       }
-      res.json(result);
+
+      res.json({
+        result: result,
+        itemsPrice: itemsPrice,
+        itemsCount: result.length,
+      });
     } else {
-      res.json([]);
+      res.json({
+        result: [],
+        itemsPrice: 0,
+        itemsCount: 0,
+      });
+    }
+  } catch (error) {
+    res.json(error);
+    console.log(error);
+  }
+});
+
+//get checkOut
+
+app.post("/checkOut", async (req, res) => {
+  const products = req.body;
+  let itemsPrice = 0; // Variable to store the total count for all products
+
+  try {
+    if (products && products.length > 0) {
+      for (const product of products) {
+        const { productId, sizes } = product;
+
+        const foundProduct = await ProductModel.findOne({ _id: productId });
+
+        if (foundProduct) {
+          let productTotalCount = 0;
+
+          for (const size of sizes) {
+            if (size.qty > 0) {
+              const foundSize = foundProduct.sizes.find(
+                (sizeObj) => sizeObj.size === size.size
+              );
+              if (foundSize) {
+                const totalCount = Number(foundSize.Price) * Number(size.qty);
+
+                productTotalCount += totalCount;
+              }
+            }
+          }
+
+          itemsPrice += productTotalCount;
+        }
+      }
+
+      const deliveryFee = 0;
+      const orderTotal = itemsPrice + deliveryFee;
+
+      res.json({
+        itemsPrice: itemsPrice,
+        deliveryFee: deliveryFee,
+        orderTotal: orderTotal,
+      });
+    } else {
+      res.json({
+        itemsPrice: 0,
+        deliveryFee: 0,
+        orderTotal: 0,
+      });
     }
   } catch (error) {
     res.json(error);
