@@ -626,6 +626,63 @@ app.post("/productorder", async (req, res) => {
   }
 });
 
+// Get Orderdetails
+
+app.get("/getOrderDetails", async (req, res) => {
+  const searchOrder = req.query.id;
+  try {
+    let data = await ProductOrderModel.aggregate([
+      {
+        $match: { userId: { $regex: searchOrder } },
+      },
+      {
+        $project: {
+          _id: 1,
+          productdetail: {
+            $map: {
+              input: "$productdetail",
+              as: "product",
+              in: {
+                productId: "$$product.productId",
+                title: "$$product.title",
+                productcode: "$$product.productCode",
+                posterURL: "$$product.posterURL",
+                sizes: {
+                  $map: {
+                    input: "$$product.sizes",
+                    as: "size",
+                    in: {
+                      size: "$$size.size",
+                      quantity: "$$size.quantity",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          totalprice: 1,
+          status: 1,
+          orderdateandtime: 1,
+          showposter: { $arrayElemAt: ["$productdetail.posterURL", 0] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%d-%m-%Y", date: "$orderdateandtime" },
+          },
+          orders: { $push: "$$ROOT" },
+        },
+      },
+      { $sort: { _id: -1 } },
+    ]);
+    res.send(data);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred");
+  }
+});
+
 // This api is for search
 
 app.get("/searchproduct", async (req, res) => {
@@ -642,7 +699,7 @@ app.get("/searchproduct", async (req, res) => {
     {
       $project: {
         title: 1,
-        _id: 0,
+        _id: 1,
         sizes: {
           $map: {
             input: "$sizes",
