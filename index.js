@@ -11,7 +11,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ProductOrderModel = require("./Models/Productorder");
-const papa = require("papaparse");
 const fs = require("fs");
 const UserModel = require("./Models/User");
 
@@ -730,7 +729,7 @@ app.get("/getOrderDetails", async (req, res) => {
               input: "$productdetail",
               as: "product",
               in: {
-                productId: "$$product.productId",
+                productId: "$$product._id",
                 title: "$$product.title",
                 productcode: "$$product.productCode",
                 posterURL: "$$product.posterURL",
