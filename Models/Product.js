@@ -12,17 +12,12 @@ const productSchema = new mongoose.Schema({
     {
       size: String,
       Instock: Number,
-      Price:Number,
+      Price: Number,
     },
   ],
-  price: Number,
-  color: [
-    {
-      type: String,
-    },
-  ],
-  count: Number,
+  color: String,
   // createdDate: { type: Date, default: Date.now },
+  price: Number,
   discount: Number,
   description: String,
   productCode: String,

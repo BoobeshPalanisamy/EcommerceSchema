@@ -11,6 +11,9 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ProductOrderModel = require("./Models/Productorder");
+const papa = require("papaparse");
+const fs = require("fs");
+const UserModel = require("./Models/User");
 
 main().catch((err) => console.log(err));
 
@@ -90,7 +93,6 @@ app.put("/updatecategories/:id", async (req, res) => {
     } else {
       return res.status(400).json({ error: "Category ID is required." });
     }
-    
   } catch (error) {
     res.json(error.message);
   }
@@ -115,8 +117,8 @@ app.get("/getAllProducts", async (req, res) => {
           title: 1,
           description: 1,
           productCode: 1,
-          materialType:1,
-          posterURL:1,
+          materialType: 1,
+          posterURL: 1,
           categoryName: "$category.name",
           sizes: {
             $map: {
@@ -142,6 +144,36 @@ app.get("/getAllProducts", async (req, res) => {
     res.json(productDetail);
   } catch (error) {
     res.json(error.message);
+  }
+});
+// This API is for product Bulk Upload
+
+app.post("/bulkupload", async (req, res) => {
+  try {
+    const products = req.body;
+    // console.log(products);
+
+    // Create an array to store the created products
+    const createdProducts = [];
+
+    // Iterate over the products array and create a document for each product
+    for (const productData of products) {
+      // Find the category by name and replace it with the _id
+      const category = await CategoryModel.findOne({
+        name: productData.category,
+      });
+      if (category) {
+        productData.category = category._id;
+      }
+
+      const createdProduct = await ProductModel.create(productData);
+      createdProducts.push(createdProduct);
+    }
+
+    res.json(createdProducts);
+  } catch (error) {
+    console.error("Error creating products:", error);
+    res.status(500).json({ error: "Error creating products" });
   }
 });
 
@@ -247,13 +279,11 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
   }
 });
 
-// Get all category
-// app.get("/fetchCategory", authorization, async (req, res) => {
-//post local storage value
-
 app.post("/getMyBag", async (req, res) => {
   const products = req.body;
   const result = [];
+  let itemsPrice = 0; // Variable to store the total count for all products
+
   try {
     if (products && products.length > 0) {
       for (const product of products) {
@@ -269,33 +299,109 @@ app.post("/getMyBag", async (req, res) => {
             _id: foundProduct._id,
             posterURL: foundProduct.posterURL,
             title: foundProduct.title,
-            price: foundProduct.price,
             productCode: foundProduct.productCode,
             sizes: [],
           };
+
           sizes.sort((a, b) => b.size.localeCompare(a.size));
+
+          let productTotalCount = 0; // Variable to store the total count for each product
+
           for (const size of sizes) {
             if (size.qty > 0) {
               const foundSize = foundProduct.sizes.find(
                 (sizeObj) => sizeObj.size === size.size
               );
               if (foundSize) {
+                const sizePrizeTotal =
+                  Number(foundSize.Price) * Number(size.qty);
+
                 productDetail.sizes.push({
                   size: foundSize.size,
                   price: foundSize.Price,
                   qty: size.qty,
                 });
+
+                productTotalCount += sizePrizeTotal; // Increment productTotalCount with the totalCount of each size
               }
             }
           }
-          if (productDetail.sizes.length != 0) {
-            result.push(productDetail);
+
+          itemsPrice += productTotalCount; // Increment totalProductCount with the productTotalCount
+
+          if (productDetail.sizes.length !== 0) {
+            result.push({
+              ...productDetail,
+            });
           }
         }
       }
-      res.json(result);
+
+      res.json({
+        result: result,
+        itemsPrice: itemsPrice,
+        itemsCount: result.length,
+      });
     } else {
-      res.json([]);
+      res.json({
+        result: [],
+        itemsPrice: 0,
+        itemsCount: 0,
+      });
+    }
+  } catch (error) {
+    res.json(error);
+    console.log(error);
+  }
+});
+
+//get checkOut
+
+app.post("/checkOut", async (req, res) => {
+  const products = req.body;
+  let itemsPrice = 0; // Variable to store the total count for all products
+
+  try {
+    if (products && products.length > 0) {
+      for (const product of products) {
+        const { productId, sizes } = product;
+
+        const foundProduct = await ProductModel.findOne({ _id: productId });
+
+        if (foundProduct) {
+          let productTotalCount = 0;
+
+          for (const size of sizes) {
+            if (size.qty > 0) {
+              const foundSize = foundProduct.sizes.find(
+                (sizeObj) => sizeObj.size === size.size
+              );
+              if (foundSize) {
+                const totalCount = Number(foundSize.Price) * Number(size.qty);
+
+                productTotalCount += totalCount;
+              }
+            }
+          }
+
+          itemsPrice += productTotalCount;
+        }
+      }
+
+      const deliveryFee = 0;
+      const orderTotal = itemsPrice + deliveryFee;
+
+      res.json({
+        itemsPrice: itemsPrice,
+        deliveryFee: deliveryFee,
+        orderTotal: orderTotal,
+      });
+    } else {
+      res.json({
+        itemsPrice: 0,
+        deliveryFee: 0,
+        orderTotal: 0,
+      });
     }
   } catch (error) {
     res.json(error);
@@ -358,30 +464,7 @@ app.get("/getSizesById/:productId", async (req, res) => {
 // RegisterAddress
 app.post("/registeraddress", async (req, res) => {
   try {
-    // const {
-    //   Name,
-    //   PhoneNumber,
-    //   AlternatePhone,
-    //   Locality,
-    //   Address,
-    //   City,
-    //   Pincode,
-    //   State,
-    //   Landmark,
-    //   AddressType,
-    // } = req.body;
-
     const newSignup = new SignupModel({
-      // Name,
-      // PhoneNumber,
-      // AlternatePhone,
-      // Locality,
-      // Address,
-      // City,
-      // Pincode,
-      // State,
-      // Landmark,
-      // AddressType,
       ...req.body,
     });
 
@@ -423,83 +506,59 @@ app.get("/user/:id", async (req, res) => {
 // SignUp
 
 app.post("/signup", async (req, res) => {
-  let { name, email, password } = req.body;
-  name = name.trim();
-  email = email.trim();
-  password = password.trim();
+  let { name, phonenumber, email, password } = req.body;
 
-  if (name === "" || email === "" || password === "") {
-    res.json({
-      status: "FAILED",
-      message: "Empty input fields!",
-    });
-  } else if (!/^[a-zA-Z\s]+$/.test(name)) {
-    res.json({
-      status: "FAILED",
-      message: "Invalid name format",
-    });
-  } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-    res.json({
-      status: "FAILED",
-      message: "Invalid email format",
-    });
-  } else if (password.length < 8) {
-    res.json({
-      status: "FAILED",
-      message: "Password is too short!",
-    });
-  } else {
-    try {
-      // Check if the user already exists
-      const existingUser = await SignupModel.findOne({ email });
-      if (existingUser) {
-        res.json({
-          status: "FAILED",
-          message: "User with provided email already exists",
-        });
-      } else {
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-        const newUser = new SignupModel({
-          name,
-          email,
-          password: hashedPassword,
-        });
-        const savedUser = await newUser.save();
-        // Generate JWT token
-        const token = jwt.sign(
-          { userId: savedUser._id, email: savedUser.email },
-          "mystery"
-        );
-        res
-          .cookie("access_token", token, {
-            httpOnly: true,
-            secure: false,
-          })
-          .json({
-            status: "200",
-            message: "Signup Successful",
-            data: savedUser,
-          });
-      }
-    } catch (err) {
-      console.error(err);
+  try {
+    // Check if the user already exists
+    const existingUser = await UserModel.findOne({ phonenumber });
+    if (existingUser) {
       res.json({
         status: "FAILED",
-        message: "An error occurred while signing up!",
+        message: "User with provided email already exists",
       });
+    } else {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const newUser = new UserModel({
+        name,
+        phonenumber,
+        email,
+        password: hashedPassword,
+      });
+      const savedUser = await newUser.save();
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: savedUser._id, email: savedUser.email },
+        "mystery"
+      );
+      res
+        .cookie("access_token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .json({
+          status: "200",
+          message: "Signup Successful",
+          data: savedUser,
+        });
     }
+  } catch (err) {
+    console.error(err);
+    res.json({
+      status: "FAILED",
+      message: "An error occurred while signing up!",
+    });
   }
 });
 
-// Signin
+// Login
 
 app.post("/login", async (req, res) => {
-  let { PhoneNumber, password } = req.body;
-  PhoneNumber = PhoneNumber;
+  let { phonenumber, password } = req.body;
+  phonenumber = phonenumber;
   password = password;
 
-  if (PhoneNumber === "" || password === "") {
+  if (phonenumber === "" || password === "") {
     res.json({
       status: "FAILED",
       message: "Empty credentials supplied",
@@ -507,11 +566,11 @@ app.post("/login", async (req, res) => {
   } else {
     try {
       // Check if user exists
-      const user = await SignupModel.findOne({ email });
+      const user = await UserModel.findOne({ phonenumber });
       if (!user) {
         return res.json({
           status: "FAILED",
-          message: "Invalid credentials entered!",
+          message: "User Not Available Please Signup to continue",
         });
       }
 
@@ -549,8 +608,105 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Protected
 app.get("/protected", authorization, (req, res) => {
   return res.json({ user: { id: req.id, email: req.email } });
+});
+
+// Reset Password
+app.post("/forgotpassword", async (req, res) => {
+  try {
+    // Get the phone number from the request body
+    const phonenumber = req.body.phonenumber;
+
+    // Check if the user with the provided phone number exists
+    const existingUser = await UserModel.findOne({ phonenumber });
+    if (!existingUser) {
+      return res.json({
+        status: "FAILED",
+        message: "User with provided phone number does not exist",
+      });
+    }
+
+    // Generate a unique password reset token
+    const resetToken = await generateResetToken();
+
+    // Hash the reset token using bcrypt
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    // Store the hashed reset token and its associated phone number in your database or cache
+    existingUser.resetToken = hashedToken;
+    await existingUser.save();
+
+    // Construct the custom reset link with the phone number included
+    const resetLink = `/reset-password?phonenumber=${encodeURIComponent(
+      phonenumber
+    )}&token=${encodeURIComponent(resetToken)}`;
+
+    // Return the reset link to the client
+    res.json({ resetLink });
+  } catch (error) {
+    console.error("Error generating reset link:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const { randomBytes } = require("crypto");
+
+function generateResetToken() {
+  return new Promise((resolve, reject) => {
+    randomBytes(16, (error, buffer) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(buffer.toString("hex"));
+      }
+    });
+  });
+}
+
+app.post("/reset-password", async (req, res) => {
+  try {
+    // Get the phone number and reset token from the request query parameters
+    const phonenumber = req.query.phonenumber;
+    const resetToken = req.query.token;
+
+    // Find the user with the provided phone number
+    const user = await UserModel.findOne({ phonenumber });
+    if (!user) {
+      return res.json({
+        status: "FAILED",
+        message: "User with provided phone number does not exist",
+      });
+    }
+
+    if (user.isResetLinkUsed) {
+      return res.json({
+        status: "FAILED",
+        message: "Reset link has already been used",
+      });
+    }
+
+    // Hash the new password
+    const newPassword = req.body.newPassword;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password and reset token in the UserModel
+    user.password = hashedPassword;
+    user.resetToken = null;
+    user.isResetLinkUsed = true;
+
+    // Save the updated user in the database
+    await user.save();
+
+    res.json({
+      status: "SUCCESS",
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 //check validation
@@ -603,12 +759,22 @@ app.post("/checkValidation", async (req, res) => {
 });
 
 // This API is for create Product Order Table
-
 app.post("/productorder", async (req, res) => {
   try {
     var productorderDoc = await ProductOrderModel.create({
       ...req.body,
     });
+
+    // Reduce the Instock quantity in the ProductModel for each ordered size
+    for (const productDetail of req.body.productdetail) {
+      for (const size of productDetail.sizes) {
+        await ProductModel.updateOne(
+          { _id: productDetail.productId, "sizes.size": size.size },
+          { $inc: { "sizes.$.Instock": -size.quantity } }
+        );
+      }
+    }
+
     res.json(productorderDoc);
   } catch (error) {
     res.json(error.message);
@@ -616,7 +782,6 @@ app.post("/productorder", async (req, res) => {
 });
 
 // Get Orderdetails
-
 app.get("/getOrderDetails", async (req, res) => {
   const searchOrder = req.query.id;
   try {
@@ -642,7 +807,8 @@ app.get("/getOrderDetails", async (req, res) => {
                     as: "size",
                     in: {
                       size: "$$size.size",
-                      quantity: "$$size.quantity",
+                      qty: "$$size.quantity",
+                      price: "$$size.price",
                     },
                   },
                 },
@@ -704,6 +870,32 @@ app.get("/searchproduct", async (req, res) => {
     },
   ]);
   res.send(data);
+});
+
+// This API is for CSV upload
+
+app.get("/uploadcsv", async (req, res) => {
+  try {
+    const papa = require("papaparse");
+    const filePath = req.query.filePath;
+    const file = await fs.promises.readFile(
+      filePath,
+      //  "C:/Users/Admin/Downloads/Product_Upload.csv",
+      "utf8"
+    );
+
+    papa.parse(file, {
+      skipEmptyLines: "greedy",
+      header: false,
+      complete: (result) => {
+        // console.dir(result.data);
+        res.send(result.data);
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.listen(port, () => {
