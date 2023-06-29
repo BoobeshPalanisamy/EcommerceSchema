@@ -602,7 +602,7 @@ app.post("/reset-password", async (req, res) => {
   try {
     // Get the phone number and reset token from the request query parameters
     const phonenumber = req.query.phonenumber;
-    const resetToken = req.query.token;
+    // const resetToken = req.query.token;
 
     // Find the user with the provided phone number
     const user = await UserModel.findOne({ phonenumber });
@@ -641,6 +641,35 @@ app.post("/reset-password", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+// This API is for logout
+app.get("/logout", (req, res) => {
+  res.clearCookie("access_token");
+  res.json({
+    status: "SUCCESS",
+    message: "Logged out successfully",
+  });
+});
+
+// This API is for Check whether the user is LoggedIn
+app.get("/isAuthorized", (req, res) => {
+  const { access_token } = req.cookies;
+
+  if (access_token) {
+    // Cookie is available
+    res.json({
+      status: "true",
+      message: "Cookie is available",
+    });
+  } else {
+    // Cookie is not available
+    res.json({
+      status: "false",
+      message: "Cookie is not available",
+    });
+  }
+});
+
 
 //check validation
 
