@@ -11,7 +11,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ProductOrderModel = require("./Models/Productorder");
-const papa = require("papaparse");
 const fs = require("fs");
 
 main().catch((err) => console.log(err));
@@ -199,10 +198,6 @@ app.get("/fetchProductsByCategory/:categoryId", async (req, res) => {
       },
     ]);
 
-    // const products = await ProductModel.find(
-    //   { category: _categoryId },
-    //   { title: 1, posterURL: 1, price: 1, productCode: 1 }
-    // ).populate("category", "name image");
     const categoryWithProducts =
       categoriesWithProducts.length > 0 ? categoriesWithProducts[0] : [];
     res.json(categoryWithProducts);
