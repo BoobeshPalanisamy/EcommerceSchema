@@ -12,6 +12,7 @@ const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const ProductOrderModel = require("./Models/Productorder");
 const fs = require("fs");
+const UserModel = require("./Models/User");
 
 main().catch((err) => console.log(err));
 
@@ -433,83 +434,59 @@ app.get("/user/:id", async (req, res) => {
 // SignUp
 
 app.post("/signup", async (req, res) => {
-  let { name, email, password } = req.body;
-  name = name.trim();
-  email = email.trim();
-  password = password.trim();
+  let { name, phonenumber, email, password } = req.body;
 
-  if (name === "" || email === "" || password === "") {
-    res.json({
-      status: "FAILED",
-      message: "Empty input fields!",
-    });
-  } else if (!/^[a-zA-Z\s]+$/.test(name)) {
-    res.json({
-      status: "FAILED",
-      message: "Invalid name format",
-    });
-  } else if (!/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
-    res.json({
-      status: "FAILED",
-      message: "Invalid email format",
-    });
-  } else if (password.length < 8) {
-    res.json({
-      status: "FAILED",
-      message: "Password is too short!",
-    });
-  } else {
-    try {
-      // Check if the user already exists
-      const existingUser = await SignupModel.findOne({ email });
-      if (existingUser) {
-        res.json({
-          status: "FAILED",
-          message: "User with provided email already exists",
-        });
-      } else {
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-        const newUser = new SignupModel({
-          name,
-          email,
-          password: hashedPassword,
-        });
-        const savedUser = await newUser.save();
-        // Generate JWT token
-        const token = jwt.sign(
-          { userId: savedUser._id, email: savedUser.email },
-          "mystery"
-        );
-        res
-          .cookie("access_token", token, {
-            httpOnly: true,
-            secure: false,
-          })
-          .json({
-            status: "200",
-            message: "Signup Successful",
-            data: savedUser,
-          });
-      }
-    } catch (err) {
-      console.error(err);
+  try {
+    // Check if the user already exists
+    const existingUser = await UserModel.findOne({ phonenumber });
+    if (existingUser) {
       res.json({
         status: "FAILED",
-        message: "An error occurred while signing up!",
+        message: "User with provided email already exists",
       });
+    } else {
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+      const newUser = new UserModel({
+        name,
+        phonenumber,
+        email,
+        password: hashedPassword,
+      });
+      const savedUser = await newUser.save();
+      // Generate JWT token
+      const token = jwt.sign(
+        { userId: savedUser._id, email: savedUser.email },
+        "mystery"
+      );
+      res
+        .cookie("access_token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .json({
+          status: "200",
+          message: "Signup Successful",
+          data: savedUser,
+        });
     }
+  } catch (err) {
+    console.error(err);
+    res.json({
+      status: "FAILED",
+      message: "An error occurred while signing up!",
+    });
   }
 });
 
-// Signin
+// Login
 
 app.post("/login", async (req, res) => {
-  let { PhoneNumber, password } = req.body;
-  PhoneNumber = PhoneNumber;
+  let { phonenumber, password } = req.body;
+  phonenumber = phonenumber;
   password = password;
 
-  if (PhoneNumber === "" || password === "") {
+  if (phonenumber === "" || password === "") {
     res.json({
       status: "FAILED",
       message: "Empty credentials supplied",
@@ -517,11 +494,11 @@ app.post("/login", async (req, res) => {
   } else {
     try {
       // Check if user exists
-      const user = await SignupModel.findOne({ email });
+      const user = await UserModel.findOne({ phonenumber });
       if (!user) {
         return res.json({
           status: "FAILED",
-          message: "Invalid credentials entered!",
+          message: "User Not Available Please Signup to continue",
         });
       }
 
@@ -559,8 +536,105 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Protected
 app.get("/protected", authorization, (req, res) => {
   return res.json({ user: { id: req.id, email: req.email } });
+});
+
+// Reset Password
+app.post("/forgotpassword", async (req, res) => {
+  try {
+    // Get the phone number from the request body
+    const phonenumber = req.body.phonenumber;
+
+    // Check if the user with the provided phone number exists
+    const existingUser = await UserModel.findOne({ phonenumber });
+    if (!existingUser) {
+      return res.json({
+        status: "FAILED",
+        message: "User with provided phone number does not exist",
+      });
+    }
+
+    // Generate a unique password reset token
+    const resetToken = await generateResetToken();
+
+    // Hash the reset token using bcrypt
+    const hashedToken = await bcrypt.hash(resetToken, 10);
+
+    // Store the hashed reset token and its associated phone number in your database or cache
+    existingUser.resetToken = hashedToken;
+    await existingUser.save();
+
+    // Construct the custom reset link with the phone number included
+    const resetLink = `/reset-password?phonenumber=${encodeURIComponent(
+      phonenumber
+    )}&token=${encodeURIComponent(resetToken)}`;
+
+    // Return the reset link to the client
+    res.json({ resetLink });
+  } catch (error) {
+    console.error("Error generating reset link:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+const { randomBytes } = require("crypto");
+
+function generateResetToken() {
+  return new Promise((resolve, reject) => {
+    randomBytes(16, (error, buffer) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(buffer.toString("hex"));
+      }
+    });
+  });
+}
+
+app.post("/reset-password", async (req, res) => {
+  try {
+    // Get the phone number and reset token from the request query parameters
+    const phonenumber = req.query.phonenumber;
+    const resetToken = req.query.token;
+
+    // Find the user with the provided phone number
+    const user = await UserModel.findOne({ phonenumber });
+    if (!user) {
+      return res.json({
+        status: "FAILED",
+        message: "User with provided phone number does not exist",
+      });
+    }
+
+    if (user.isResetLinkUsed) {
+      return res.json({
+        status: "FAILED",
+        message: "Reset link has already been used",
+      });
+    }
+
+    // Hash the new password
+    const newPassword = req.body.newPassword;
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update the password and reset token in the UserModel
+    user.password = hashedPassword;
+    user.resetToken = null;
+    user.isResetLinkUsed = true;
+
+    // Save the updated user in the database
+    await user.save();
+
+    res.json({
+      status: "SUCCESS",
+      message: "Password reset successful",
+    });
+  } catch (error) {
+    console.error("Error resetting password:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 //check validation
